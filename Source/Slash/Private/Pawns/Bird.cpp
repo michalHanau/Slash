@@ -1,0 +1,74 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Pawns/Bird.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
+
+ABird::ABird()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
+	Capsule->SetCapsuleHalfHeight(20.f);
+	Capsule->SetCapsuleRadius(15.f);
+	SetRootComponent(Capsule);
+	
+	BirdMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BirdMesh"));
+	BirdMesh->SetupAttachment(GetRootComponent());
+	
+	CameraArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraArm"));
+	CameraArm->SetupAttachment(GetRootComponent());
+	CameraArm->TargetArmLength=200.f;
+
+	ViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ViewCamera"));
+	ViewCamera->SetupAttachment(CameraArm);
+	
+	//מגדיר את הציפור כשחקן ראשי
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
+}
+
+
+void ABird::BeginPlay()
+{
+	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("Bird is alive!"));
+}
+
+void ABird::MoveForward(float Value)
+{
+	if (Controller && (Value != 0.f)) {
+		FVector Forward = GetActorForwardVector();
+		AddMovementInput(Forward, Value);
+	}
+}
+
+void ABird::Turn(float Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Turn Value: %f"), Value);
+	AddControllerYawInput(Value);
+}
+
+void ABird::LookUp(float Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Look Value: %f"), Value);
+	AddControllerPitchInput(Value);
+}
+
+void ABird::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
+void ABird::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAxis(FName("MoveForward"), this, &ABird::MoveForward);
+	PlayerInputComponent->BindAxis(FName("Turn"), this, &ABird::Turn);
+	PlayerInputComponent->BindAxis(FName("LookUp"), this, &ABird::LookUp);
+}
+
