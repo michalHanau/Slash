@@ -6,6 +6,12 @@
 
 class USphereComponent;
 
+enum class EItemState : uint8
+{
+	EIS_Hovering, // מרחף בעולם
+	EIS_Equipped  // מחובר לשחקן
+};
+
 UCLASS()
 class SLASH_API AItem : public AActor
 {
@@ -14,6 +20,8 @@ class SLASH_API AItem : public AActor
 public:	
 	AItem();
 	virtual void Tick(float DeltaTime) override;
+	
+	float TransformedSin();
 	
 	// פונקציה שרק מחזירה את ה-Mesh
 	FORCEINLINE UStaticMeshComponent* GetMesh() const { return ItemMesh; }
@@ -29,12 +37,23 @@ protected:
 
 	UFUNCTION()
 	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
+	EItemState ItemState = EItemState::EIS_Hovering; // ברירת מחדל - מרחף
+	
 private:
 	float RunningTime;
+	
+	
+	UPROPERTY(EditAnywhere)
+	float Amplitude = 0.25f;
+
+	UPROPERTY(EditAnywhere)
+	float ConstatTime = 5.f;
 	
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ItemMesh;
 	
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent * Sphere;
+	
 };

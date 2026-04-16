@@ -43,9 +43,19 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 		}
 }
 
+float AItem::TransformedSin() {
+	return Amplitude * FMath::Sin(RunningTime * ConstatTime);
+}
+
 void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	
+	Super::Tick(DeltaTime);
+	RunningTime += DeltaTime;
+	float DeltaZ = TransformedSin();
+
+	AddActorWorldOffset(FVector(0.f, 0.f,DeltaZ));
 }
 

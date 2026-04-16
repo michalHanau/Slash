@@ -39,10 +39,13 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 		GetSphere()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (GetMesh()) // גם למודל עצמו כדאי לבטל התנגשות פיזית בזמן שהוא ביד
+	if (GetMesh()) //ביטול ההתנגשות כשחרב ביד
 	{
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
+	
+	//שינוי מצב בנשק
+	ItemState = EItemState::EIS_Equipped;
 }
 

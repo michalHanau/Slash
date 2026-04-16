@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UGroomComponent;
 class AWeapon;
+class UAnimMontage;
 
 UCLASS()
 class SLASH_API ASlashCharacter : public ACharacter
@@ -31,14 +32,23 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	//קריאות של קלט
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void Turn(float Value);
 	void LookUp(float Value);
-	//מקשר את החרב ללחצן
 	void EKeyPressed();
+	void Attack();
+	
+	//הפעלת מונטאז'
+	void PlayAttackMontage();
 
 private:
+	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	EActionState ActionState = EActionState::EAS_Unoccupied;
+	
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* CameraBoom;
 
@@ -55,5 +65,13 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	AWeapon* OverlappingWeapon;
 	
-	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+	UPROPERTY(EditDefaultsOnly, Category = "Montages")
+	UAnimMontage* AttackMontage;
+	
+	//מסיים את מצב הפעולה
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+	
+	
+
 };
