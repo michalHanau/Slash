@@ -28,6 +28,8 @@ public:
 	FORCEINLINE void SetOverlappingWeapon(AWeapon* Weapon) { OverlappingWeapon = Weapon; }
 	
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+	
+	FORCEINLINE void SetEquippedWeapon(AWeapon* Weapon) { EquippedWeapon = Weapon; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -72,6 +74,17 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
 	
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
 	
+	//מקבלת מצב ומכילה אותו על החרב
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+	
+	// פונקציות שנקרא להן מהאנימציה
+	UFUNCTION(BlueprintCallable)
+	void EnableWeaponCollision();
 
+	UFUNCTION(BlueprintCallable)
+	void DisableWeaponCollision();
 };

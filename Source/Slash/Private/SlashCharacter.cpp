@@ -7,8 +7,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include  "GroomComponent.h"
+#include "GroomComponent.h"
 #include "Items/Weapon.h"
+#include "Components/BoxComponent.h"
 
 
 ASlashCharacter::ASlashCharacter()
@@ -142,6 +143,44 @@ void ASlashCharacter::AttackEnd()
 {
 	ActionState = EActionState::EAS_Unoccupied;
 }
+
+void ASlashCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	// בדיקה: האם יש לנו נשק? והאם לנשק יש קופסת התנגשות?
+	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
+	{
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+	}
+}
+
+void ASlashCharacter::EnableWeaponCollision()
+{
+	// הדפסה למסך לבדיקה
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,              // ID (מינוס 1 אומר שההודעה תתווסף לרשימה ולא תחליף קיימת)
+			5.f,             // כמה שניות ההודעה תישאר על המסך
+			FColor::Blue,    // צבע הטקסט (בחרתי טורקיז שיהיה בולט)
+			TEXT("תעבודדדד!") // הטקסט שיופיע
+		);
+	}
+	if (EquippedWeapon)
+	{
+		// כאן אנחנו קוראים לפונקציה של הנשק (זאת שהייתה ב-Comment)
+		EquippedWeapon->SetWeaponCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
+}
+
+void ASlashCharacter::DisableWeaponCollision()
+{
+	
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
 
 void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
