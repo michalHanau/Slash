@@ -27,15 +27,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 	
+	UFUNCTION(BlueprintImplementableEvent)
+	void CreateFields(const FVector& FieldLocation);
+	
 	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
-public:
 	AWeapon();
 	
 	void Equip(USceneComponent* InParent, FName InSocketName);
 	
 	FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
+	
+	TArray<AActor*> IgnoreActors;
 
 private:
 	//הקופסא העוטפת את החרב
@@ -48,5 +52,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* BoxTraceEnd;
+	
+	
 	
 };

@@ -99,36 +99,15 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		true
 	);
 	
-	if (BoxHit.GetActor()) 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Weapon hit something: %s"), *BoxHit.GetActor()->GetName());
-	}
-	else 
-	{
-		UE_LOG(LogTemp, Error, TEXT("Weapon hit NOTHING!"));
-	}
-	
-	IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
-
-	if (HitInterface)
-	{
-		// אם הצלחנו לעשות קאסט, זה אומר שלאובייקט יש את הפונקציה GetHit
-		HitInterface->GetHit(BoxHit.ImpactPoint);
-	}
-	else
-	{
-		// אם זה מודפס, סימן שהחרב פגעה במשהו, אבל הוא לא "מבין" את הממשק
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Weapon: Cast to Interface Failed!"));
-		}
-	}
-	
-
-	// בדיקה: אם פגענו במשהו, נדפיס את שמו
 	if (BoxHit.GetActor())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *BoxHit.GetActor()->GetName());
+		// IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+		// if (HitInterface)
+		// {
+		// 	HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+		// }
+		// IgnoreActors.AddUnique(BoxHit.GetActor());
+		CreateFields(BoxHit.ImpactPoint);
 	}
 }
 
