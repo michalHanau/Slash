@@ -4,6 +4,7 @@
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interface/HitInterface.h"
+#include "NiagaraComponent.h"
 
 //בנאי
 AWeapon::AWeapon()
@@ -71,7 +72,6 @@ void AWeapon::Tick(float DeltaTime)
 void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
                            int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	
 	UE_LOG(LogTemp, Warning, TEXT("OVERLAP DETECTED WITH: %s"), *OtherActor->GetName());
 	// קבלת המיקומים של נקודות ההתחלה והסוף
 	const FVector Start = BoxTraceStart->GetComponentLocation();
@@ -98,15 +98,15 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		BoxHit,
 		true
 	);
-	
+
 	if (BoxHit.GetActor())
 	{
-		// IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
-		// if (HitInterface)
-		// {
-		// 	HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-		// }
-		// IgnoreActors.AddUnique(BoxHit.GetActor());
+		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+		if (HitInterface)
+		{
+			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+		}
+		IgnoreActors.AddUnique(BoxHit.GetActor());
 		CreateFields(BoxHit.ImpactPoint);
 	}
 }
@@ -144,6 +144,9 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 // המימוש של החיבור ליד!
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 {
+	
+	UE_LOG(LogTemp, Warning, TEXT("Equip function is RUNNING!"));
+	
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
 	GetMesh()->AttachToComponent(InParent, TransformRules, InSocketName);
 
@@ -162,6 +165,18 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 	if (SlashCharacter)
 	{
 		SlashCharacter->SetEquippedWeapon(this);
+	}
+
+	if (EmbersEffect)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Deactivating Embers"));
+		EmbersEffect->Deactivate();
+		EmbersEffect->SetVisibility(false); // ניסיון להעלים ויזואלית
+		EmbersEffect->DestroyComponent();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("EmbersEffect is NULL!"));
 	}
 
 	//שינוי מצב בנשק

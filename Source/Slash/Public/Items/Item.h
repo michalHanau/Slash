@@ -40,6 +40,9 @@ protected:
 	
 	EItemState ItemState = EItemState::EIS_Hovering; // ברירת מחדל - מרחף
 	
+	UPROPERTY(EditAnywhere)
+	class UNiagaraComponent* EmbersEffect;
+	
 private:
 	float RunningTime;
 	
@@ -55,5 +58,7 @@ private:
 	
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent * Sphere;
+	
+
 	
 };
