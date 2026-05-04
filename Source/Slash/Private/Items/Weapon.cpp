@@ -5,6 +5,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interface/HitInterface.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 //בנאי
 AWeapon::AWeapon()
@@ -101,6 +102,15 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 	if (BoxHit.GetActor())
 	{
+		
+		UGameplayStatics::ApplyDamage(
+		BoxHit.GetActor(),    // האקטור שנפגע
+		Damage,               // כמות הנזק (משתנה שיצרנו ב-Weapon)
+		GetInstigator()->GetController(), // מי שלחץ על ההדק/חרב
+		this,                 // הנשק עצמו הוא ה-Causer
+		UDamageType::StaticClass() // סוג הנזק
+	);
+		
 		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
 		if (HitInterface)
 		{
@@ -142,10 +152,10 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 
 // המימוש של החיבור ליד!
-void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
+void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
-	
-	UE_LOG(LogTemp, Warning, TEXT("Equip function is RUNNING!"));
+	SetOwner(NewOwner);
+	SetInstigator(NewInstigator);
 	
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
 	GetMesh()->AttachToComponent(InParent, TransformRules, InSocketName);
@@ -169,14 +179,9 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 
 	if (EmbersEffect)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Deactivating Embers"));
 		EmbersEffect->Deactivate();
-		EmbersEffect->SetVisibility(false); // ניסיון להעלים ויזואלית
-		EmbersEffect->DestroyComponent();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("EmbersEffect is NULL!"));
+		// EmbersEffect->SetVisibility(false); // ניסיון להעלים ויזואלית
+		// EmbersEffect->DestroyComponent();
 	}
 
 	//שינוי מצב בנשק

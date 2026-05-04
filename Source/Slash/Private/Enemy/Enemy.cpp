@@ -6,6 +6,9 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "AttributeComponent.h"
+#include "HUD/HealthBarComponent.h"
+
 
 AEnemy::AEnemy()
 {
@@ -23,17 +26,43 @@ AEnemy::AEnemy()
 
 	// הפעלת אירועי חפיפה (Overlap)
 	GetMesh()->SetGenerateOverlapEvents(true);
+	
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+	
+	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("HealthBar"));
+	
 }
 
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}
+	
 }
 
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (CombatTarget)
+	{
+		// חישוב המרחק בין האויב למטרה
+		const double DistanceToTarget = (CombatTarget->GetActorLocation() - GetActorLocation()).Size();
+
+		// אם המרחק גדול מהרדיוס שהגדרנו
+		if (DistanceToTarget > CombatRadius)
+		{
+			if (HealthBarWidget) 
+			{
+				HealthBarWidget->SetVisibility(false);
+			}
+			CombatTarget = nullptr; // מאפסים את המטרה
+		}
+	}
 
 }
 
@@ -45,74 +74,126 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
-	//חישוב הוקטור של הפגיעה
-	const FVector Forward = GetActorForwardVector();
-	FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, GetActorLocation().Z);
-	const FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();
-	
-	// חישוב הזווית של הפגיעה
-	double CosTheta = FVector::DotProduct(Forward, ToHit);
-	double Theta = FMath::Acos(CosTheta);
-	Theta = FMath::RadiansToDegrees(Theta);
-	
-	
-	// 7. ציור חץ אדום שמראה לאן האויב מסתכל (Forward)
-	UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + Forward * 60.f, 5.f, FColor::Red, 5.f);
-	// 8. ציור חץ ירוק שמראה את כיוון המכה (ToHit)
-	UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + ToHit * 60.f, 5.f, FColor::Green, 5.f);
-	// 9. הדפסת הזווית על המסך בצד שמאל למעלה
-	if (GEngine)
+	if (HealthBarWidget)
 	{
-		GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Green, FString::Printf(TEXT("Theta: %f"), Theta));
+		HealthBarWidget->SetVisibility(true);
 	}
 	
+	if (Attributes && Attributes->IsAlive())
+	{
+		DirectionalHitReact(ImpactPoint);
+;
+	}
+	else
+	{
+		Die();
+	}
 	
-	//  חישוב ה-Cross Product
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+	// --- האפקטים תמיד יקרו (גם במוות וגם בפגיעה רגילה) ---
+	if (HitSound)UGameplayStatics::PlaySoundAtLocation(this, HitSound, ImpactPoint);
+	if (HitParticles)UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, ImpactPoint);
+}
 
-	//  האם הווקטור מצביע למטה?
+
+void AEnemy::Die()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && DeathMontage)
+	{
+		AnimInstance->Montage_Play(DeathMontage);
+
+		// הגרלה רנדומלית של פוזה (0-5)
+		const int32 Selection = FMath::RandRange(0, 5);
+		FName SectionName;
+
+		// עדכון ה-Enum וה-Section בהתאם להגרלה
+		switch (Selection)
+		{
+		case 0: 
+			SectionName = FName("Death1"); 
+			DeathPose = EDeathPose::EDP_Death1;
+			break;
+		case 1: 
+			SectionName = FName("Death2"); 
+			DeathPose = EDeathPose::EDP_Death2;
+			break;
+		case 2: 
+			SectionName = FName("Death3"); 
+			DeathPose = EDeathPose::EDP_Death3;
+			break;
+		case 3: 
+			SectionName = FName("Death4"); 
+			DeathPose = EDeathPose::EDP_Death4;
+			break;
+		case 4: 
+			SectionName = FName("Death5"); 
+			DeathPose = EDeathPose::EDP_Death5;
+			break;
+		case 5: 
+			SectionName = FName("Death6"); 
+			DeathPose = EDeathPose::EDP_Death6;
+			break;
+		}
+
+		AnimInstance->Montage_JumpToSection(SectionName, DeathMontage);
+	}
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}
+	SetLifeSpan(3.f);
+}
+
+
+void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
+{
+	// Calculate the angle between the forward vector and the vector from the enemy to the hit point
+	const FVector Forward = GetActorForwardVector();
+	const FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, GetActorLocation().Z);
+	const FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();
+
+
+	const double CosTheta = FVector::DotProduct(Forward, ToHit);
+	double Theta = FMath::RadiansToDegrees(FMath::Acos(CosTheta));
+	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+	
 	if (CrossProduct.Z < 0)
 	{
-		// אם כן, סימן שהמכה באה משמאל - נהפוך את Theta למספר שלילי
 		Theta *= -1.f;
 	}
 
-	// 3. ציור חץ לדיבאג (כדי שנראה את ה-Cross Product בעצמנו)
-	// נצייר חץ כחול שיוצא ממרכז האויב למעלה או למטה
-	UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + CrossProduct * 100.f, 5.f, FColor::Blue, 5.f);
-
-	// 4. הדפסת ה-Theta המעודכן
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Green, FString::Printf(TEXT("Theta: %f"), Theta));
-	}
-	
-	//בדיקה מאיפה הגיעה המכה ושליחה להפעלת האנימציה המתאימה
+	// Determine the section to play based on the angle
 	FName SectionName("FromBack");
-	if (Theta >= -45.f && Theta < 45.f)
-	{
-		SectionName = FName("FromFront");
-	}
-	else if (Theta >= -135.f && Theta < -45.f)
-	{
-		SectionName = FName("FromLeft");
-	}
-	else if (Theta >= 45.f && Theta < 135.f)
-	{
-		SectionName = FName("FromRight");
-	}
+	if (Theta >= -45.f && Theta < 45.f) SectionName = FName("FromFront");
+	else if (Theta >= -135.f && Theta < -45.f) SectionName = FName("FromLeft");
+	else if (Theta >= 45.f && Theta < 135.f) SectionName = FName("FromRight");
+
+	// הפעלת האנימציה של הפגיעה
 	PlayHitReactMontage(SectionName);
+}
+
+
+
+//האויב מקשיב לנזק
+float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	// 2. עדכון משתנה ה-Health הפנימי (דרך ה-AttributeComponent)
+	if (Attributes && HealthBarWidget)
+	{
+		Attributes->ReceiveDamage(DamageAmount); // פונקציה שמחסירה חיים
+		// 3. עדכון ה-UI עם האחוז החדש
+		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
+	}
 	
-	// הפעלת סאונד בנקודת הפגיעה
-	if (HitSound)
+	//שמירת הדמות שנתנה את המכה
+	if (EventInstigator)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, HitSound, ImpactPoint);
+		CombatTarget = EventInstigator->GetPawn();
 	}
-	//  יצירת אפקט דם בנקודת הפגיעה
-	if (HitParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, ImpactPoint);
-	}
+
+	return DamageAmount;
 }
 
 //קריאה לשימוש של האויב באנימציות שיצרנו לו(קבלת משתנה לאיזה צד ללכת)
